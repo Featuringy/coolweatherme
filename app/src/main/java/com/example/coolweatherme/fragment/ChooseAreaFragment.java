@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.Response;
 
 public class ChooseAreaFragment extends Fragment {
@@ -37,7 +38,7 @@ public class ChooseAreaFragment extends Fragment {
     private TextView titleText;
     private Button backButton;
     private ListView listView;
-    private ArrayAdapter<String> adpter;
+    private ArrayAdapter<String> adapter;
     private List<String> dataList=new ArrayList<>();
     /*
     * 省列表，市列表，县列表
@@ -61,11 +62,12 @@ public class ChooseAreaFragment extends Fragment {
     * */
     @Override
     public View onCreateView(LayoutInflater inflater,ViewGroup container,Bundle savedInstanceState) {
-        View view=inflater.inflate(R.layout.choose_area,container,false);
-        titleText=(TextView)view.findViewById(R.id.title_text);
-        backButton=(Button)view.findViewById(R.id.back_button);
-        listView=(ListView)view.findViewById(R.id.list_view);
-        adpter=new ArrayAdapter<>(getContext(),android.R.layout.simple_list_item_1,dataList);
+        View view = inflater.inflate(R.layout.choose_area, container, false);
+        titleText = (TextView) view.findViewById(R.id.title_text);
+        backButton = (Button) view.findViewById(R.id.back_button);
+        listView = (ListView) view.findViewById(R.id.list_view);
+        adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, dataList);
+        listView.setAdapter(adapter);
         return view;
     }
 
@@ -113,13 +115,13 @@ public class ChooseAreaFragment extends Fragment {
             dataList.clear();
             for(Province province:provincesList){
                 dataList.add(province.getProvinceName());
-                adpter.notifyDataSetChanged();
+                adapter.notifyDataSetChanged();
                 listView.setSelection(0);//回到列表的第一项
                 currentLevel=LEVEL_PROVINCE;
             }
         }else{
             String address="http://guolin.tech/api/china";//接口
-            queryFromServer(address,"provence");//这个是从服务器上查询的方法
+            queryFromServer(address,"province");//这个是从服务器上查询的方法
 
         }
 
@@ -137,12 +139,12 @@ public class ChooseAreaFragment extends Fragment {
             for(City city:cityList){
                 dataList.add(city.getCityname());
             }
-            adpter.notifyDataSetChanged();
+            adapter.notifyDataSetChanged();
             listView.setSelection(0);
             currentLevel=LEVEL_CITY;
         }else {
             int provinceCode=selectedProvince.getProvinceCode();
-            String address="http://guolin.tech/api/china"+provinceCode;
+            String address="http://guolin.tech/api/china/"+provinceCode;
             queryFromServer(address,"city");
         }
     }
@@ -159,48 +161,45 @@ public class ChooseAreaFragment extends Fragment {
             for(County county:countyList){
                 dataList.add(county.getCountyName());
             }
-            adpter.notifyDataSetChanged();
+            adapter.notifyDataSetChanged();
             listView.setSelection(0);
             currentLevel=LEVEL_COUNTY;
 
         }else{
             int provinceCode =selectedProvince.getProvinceCode();
             int cityCode=selectedCity.getCityCode();
-            String address="http://guolin.teach/api/china"+provinceCode+"/"+cityCode;
+            String address="http://guolin.teach/api/china/"+provinceCode+"/"+cityCode;
             queryFromServer(address,"county");
         }
     }
 
-    /*
-    * .根据传入的地址和类型从服务器上查询省市县数据
-    * */
-    private void queryFromServer(String address,final String type){
+    /**
+     * 根据传入的地址和类型从服务器上查询省市县数据。
+     */
+    private void queryFromServer(String address, final String type) {
         showProgressDialog();
-        HttpUtil.sendOkHttpRequest(address,new okhttp3.Callback(){
-            /*
-            * 请求数据成功
-            * */
+        HttpUtil.sendOkHttpRequest(address, new Callback() {
             @Override
-            public void onResponse(Call call, Response response)throws IOException{
-                String responseText=response.body().string();
-                boolean result=false;
-                if("province".equals(type)){
-                    result=Utility.handleProvinceResponse(responseText);
-                }else if("city".equals(type)){
-                    result=Utility.handleCityResponse(responseText,selectedProvince.getId());
-                }else if("county".equals(type)){
-                    result=Utility.handleCountyResponse(responseText,selectedCity.getId());
+            public void onResponse(Call call, Response response) throws IOException {
+                String responseText = response.body().string();
+                boolean result = false;
+                if ("province".equals(type)) {
+                    result = Utility.handleProvinceResponse(responseText);
+                } else if ("city".equals(type)) {
+                    result = Utility.handleCityResponse(responseText, selectedProvince.getId());
+                } else if ("county".equals(type)) {
+                    result = Utility.handleCountyResponse(responseText, selectedCity.getId());
                 }
-                if(result){
+                if (result) {
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             closeProgressDialog();
-                            if("province".equals(type)){
+                            if ("province".equals(type)) {
                                 queryProvinces();
-                            }else if("city".equals(type)){
+                            } else if ("city".equals(type)) {
                                 queryCities();
-                            }else if("county".equals(type)){
+                            } else if ("county".equals(type)) {
                                 queryCounties();
                             }
                         }
@@ -208,22 +207,20 @@ public class ChooseAreaFragment extends Fragment {
                 }
             }
 
-            /*
-            * 请求数据失败
-            * */
             @Override
             public void onFailure(Call call, IOException e) {
+                // 通过runOnUiThread()方法回到主线程处理逻辑
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         closeProgressDialog();
-                        Toast.makeText(getContext(),"加载失败",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "加载失败", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
-
         });
     }
+
 
     /*
     * 显示和关闭进度对话框
