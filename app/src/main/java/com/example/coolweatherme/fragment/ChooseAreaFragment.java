@@ -1,6 +1,7 @@
 package com.example.coolweatherme.fragment;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -13,7 +14,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.coolweatherme.MainActivity;
 import com.example.coolweatherme.R;
+import com.example.coolweatherme.WeatherActivity;
 import com.example.coolweatherme.db.City;
 import com.example.coolweatherme.db.County;
 import com.example.coolweatherme.db.Province;
@@ -86,6 +89,21 @@ public class ChooseAreaFragment extends Fragment {
                 }else if(currentLevel==LEVEL_CITY){
                     selectedCity=cityList.get(position);
                     queryCounties();
+                }else if(currentLevel==LEVEL_COUNTY){
+                    String weatherId=countyList.get(position).getWeatherId();
+                    if(getActivity()instanceof MainActivity){
+                        Intent intent=new Intent(getActivity(),WeatherActivity.class);
+                        intent.putExtra("weather_id",weatherId);
+                        startActivity(intent);
+                        getActivity().finish();
+                    }else if(getActivity()instanceof WeatherActivity){
+                        WeatherActivity activity=(WeatherActivity)getActivity();
+                        activity.drawerLayout.closeDrawers();
+                        activity.swipeRefresh.setRefreshing(true);
+                        activity.requestWeather(weatherId);
+                    }
+
+
                 }
             }
         });
@@ -93,7 +111,7 @@ public class ChooseAreaFragment extends Fragment {
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(currentLevel==LEVEL_PROVINCE){
+                if(currentLevel==LEVEL_COUNTY){
                     queryCities();
                 }else if(currentLevel==LEVEL_CITY){
                     queryProvinces();
@@ -168,13 +186,13 @@ public class ChooseAreaFragment extends Fragment {
         }else{
             int provinceCode =selectedProvince.getProvinceCode();
             int cityCode=selectedCity.getCityCode();
-            String address="http://guolin.teach/api/china/"+provinceCode+"/"+cityCode;
+            String address="http://guolin.tech/api/china/"+provinceCode+"/"+cityCode;
             queryFromServer(address,"county");
         }
     }
 
     /**
-     * 根据传入的地址和类型从服务器上查询省市县数据。
+     * 根据传入的地址和类型从服务器上查询省市县数据。HttpUtil解析json的工具类，解析成功的话，保存到litepal数据库中，并返回true。
      */
     private void queryFromServer(String address, final String type) {
         showProgressDialog();

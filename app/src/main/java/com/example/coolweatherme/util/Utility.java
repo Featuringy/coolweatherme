@@ -5,12 +5,24 @@ import android.text.TextUtils;
 import com.example.coolweatherme.db.City;
 import com.example.coolweatherme.db.County;
 import com.example.coolweatherme.db.Province;
+import com.example.coolweatherme.gson.Weather;
+import com.google.gson.Gson;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+
+/*
+ *工具类
+ * 将传入的json字串解析，这里的Json字串简单，使用最原始的方法jsonobject类解析，没有使用gson解析
+ * 然后是litepal数据库的使用方法之保存数据
+ * save一次就是保存一行数据
+ * */
 public class Utility {
+
+
+
     /*
     * 解析和处理服务器返回的省级数据
     * */
@@ -88,5 +100,16 @@ public class Utility {
         return false;
     }
 
+    public static Weather handleWeatherResponse(String response){
+        try {
+            JSONObject jsonObject=new JSONObject(response);
+            JSONArray jsonArray=jsonObject.getJSONArray("HeWeather");
+            String weatherContent=jsonArray.getJSONObject(0).toString();
+            return new Gson().fromJson(weatherContent,Weather.class);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
 }
